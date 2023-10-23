@@ -29,17 +29,18 @@ labor <- labor |>
          DateTime = as.POSIXct(as.character(DatumZeit), format = "%d.%m.%Y %H:%M:%OS", tz = "UTC"),
          Konzentration = as.numeric(labordaten$Konzentration_Algen_unbestimmt),
          Trockenmasse = as.numeric(labordaten$Trockenmasse_gL),
-         log10Konz = log10(Konzentration))
+         log10Konz = log10(Konzentration),
+         Tage = labordaten$Tag)
 
 
 
-ggplot(labor, aes(x = Tag,y= Konzentration_Algen_unbestimmt)) + geom_line()
-ggplot(labor, aes(x=Tag, y=log10_Konzentration)) + geom_point() + geom_line() +
+ggplot(labor, aes(x = Tage,y= Konzentration)) + geom_line()
+ggplot(labor, aes(x=Tage, y=log10Konz)) + geom_point() + geom_line() +
   stat_smooth(method = "lm", formula = y~x, geom = "smooth")
   stat_regline_equation
 
 ## Wachstum nach Tag plotten mit Regressionsgeraden und Formel ####
-ggplot(labor, aes(x=Tag, y=log10Konz)) + geom_point() + geom_line() +  
+ggplot(labor, aes(x=Tage, y=log10Konz)) + geom_point() + geom_line() +  
   stat_poly_line() +
   stat_poly_eq(use_label(c("eq", "R2"))) +
   geom_point()
