@@ -1,0 +1,15 @@
+Fragen Dominik:
+- Zeitintervall
+- Umfang Experiment
+- statistische Auswertungen
+	- Bakterien und Zucker
+	- Trockenmasse und Zucker
+	- Variable importance
+	- Regression
+	- Vergleich mit Sommerdaten? Anova?
+- Veränderung pH Wert
+
+
+Fragen Allgemein: 
+- welche Variablen interessieren uns?
+- 
