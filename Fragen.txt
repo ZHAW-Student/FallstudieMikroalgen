@@ -13,4 +13,6 @@ Fragen Dominik:
 
 Fragen Allgemein: 
 - welche Variablen interessieren uns?
+- Bereinigung Zeitschritte Labordaten
+- Umrechnen Zeitangaben Labor in UTC
 - 
