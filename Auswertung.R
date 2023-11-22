@@ -1,13 +1,5 @@
 # Auswertungsskript Fallstudie Mikroalgen ####
 # Vorbereitung ####
-## benötigte Packages installieren ####
-install.packages("tidyverse")
-install.packages("tidyr")
-install.packages("ggplot2")
-install.packages("ggpmisc")
-install.packages("readr")
-install.packages("lubridate")
-
 ## benötigte Packages laden ####
 library("tidyverse")
 library("tidyr")
@@ -17,12 +9,11 @@ library("readr")
 library("lubridate")
 
 ## Daten einlesen ####
-reactor <- read_delim("daten.csv", ";") #Dateinamen anpassen
+aktuell <- read_delim("2023-10-02_Kultivierungsdaten.csv", ",") #Dateinamen anpassen
 labordaten <- read_delim("Labordaten6.csv", ";") #Dateinamen anpassen
 
-# neuen Dataframe erstellen mit den Daten aus dem csv, die uns weiter interessieren
+# neuen Dataframe erstellen mit den Labordaten aus dem csv, die uns weiter interessieren
 labor <- data.frame(Datum= as.character(labordaten$Datum_Probenahme))
-
 labor <- labor |> 
   mutate(Zeit = as.character(labordaten$Zeitpunkt_Probenahme),
          DatumZeit = as.character(paste(Datum, Zeit)),
@@ -33,50 +24,84 @@ labor <- labor |>
          Tage = labordaten$Tag,
          Glucose = labordaten$Glucose_mml_l)
 
+# neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
+ps_neu <- data.frame(DateTime = as.POSIXct(as.character(aktuell$time.string), format = "%Y-%m-%d %H:%M:%OS"))
 
+ps_neu <- ps_neu |> 
+  mutate(par1 = aktuell$PAR.1, # PAR Angaben in umol/m2/s
+         par2 = aktuell$PAR.2,
+         pardiff = par2 - par1,
+         temp = aktuell$TEMPERATURE,
+         pH = aktuell$pH,
+         daynight = as.factor(aktuell$daynight),
+         kW1 = aktuell$PAR.1*2.19/10000, # Umrechnen PAR in kW nach XX
+         kW2 = aktuell$PAR.2*2.19/10000)
+ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
-ggplot(labor, aes(x = Tage,y= Konzentration)) + geom_line()
-ggplot(labor, aes(x=Tage, y=log10Konz)) + geom_point() + geom_line() +
-  stat_smooth(method = "lm", formula = y~x, geom = "smooth")
-  stat_regline_equation
+# beide Datensätze über den DateTime kombinieren
+kombi <- full_join(labor, ps_neu, by = "DateTime")
 
-## Wachstum nach Tag plotten mit Regressionsgeraden und Formel ####
-ggplot(labor, aes(x=Tage, y=log10Konz)) + geom_point() + geom_line() +  
+# Kombitabelle anpassen
+kombi <- kombi |> 
+  group_by(daynight) |> 
+  mutate(kWdiff = kW2 - kW1)
+
+# Plots ####
+theme_classic()
+
+## Plot log10 Konzentration über Zeit ####
+ggplot(labor, aes(x=DateTime, y=log10Konz)) + geom_point() + geom_line() +  
   stat_poly_line() +
   stat_poly_eq(use_label(c("eq", "R2"))) +
   geom_point() +
+  theme_classic() +
     labs(
-      x = "Anzahl Tage seit Experimentbeginn",
-      y = "log10 Algenkonzentration",
-      title = "Algenkonzentration über Zeit",
-      subtitle = "02. Oktober bis 14. November 2023"
+      x = "Datum",
+      y = "log10 Anzahl Algen pro ml",
+      title = "Algenkonzentration über Zeit"
     )
 
-ggplot(labor, aes(x=Tage, y=Konzentration)) + geom_point() + geom_line() +  
+## Plot Konzentration über Zeit ####
+ggplot(labor, aes(x=DateTime, y=Konzentration)) + geom_point() + geom_line() +  
     geom_point() +
+    theme_classic() +
     labs(
-      x = "Anzahl Tage seit Experimentbeginn",
-      y = "Algenkonzentration",
-      title = "Algenkonzentration über Zeit",
-      subtitle = "02. Oktober bis 14. November 2023"
+      x = "Datum",
+      y = "Anzahl Algen pro ml",
+      title = "Algenkonzentration über Zeit"
     )
 
 ## Plot Trockenmasse ####
-ggplot(labor, aes(x=Tage, y=Trockenmasse)) + geom_point() + geom_line() +  
+ggplot(labor, aes(x=DateTime, y=Trockenmasse)) + geom_point() + geom_line() +  
   geom_point() +
+  theme_classic() +
   labs(
-    x = "Anzahl Tage seit Experimentbeginn",
+    x = "Datum",
     y = "Trockenmasse in g/l",
-    title = "Trockenmasse über Zeit",
-    subtitle = "02. Oktober bis 14. November 2023"
+    title = "Trockenmasse über Zeit"
   )
 
 ## Plot Glucose ####  
-ggplot(labor, aes(x=Tage, y=Glucose)) + geom_point() + geom_line() +  
+ggplot(labor, aes(x=DateTime, y=Glucose)) + geom_point() + geom_line() +  
   geom_point() +
+  theme_classic() +
   labs(
-    x = "Anzahl Tage seit Experimentbeginn",
-    y = "Glucose in g",
-    title = "Glucose über Zeit",
-    subtitle = "02. Oktober bis 14. November 2023"
+    x = "Datum",
+    y = "Glucose mmol/l",
+    title = "Glucose über Zeit"
   )
+
+## Plot pH ####
+ggplot(kombi, aes(x=DateTime, y=pH)) + geom_point() + geom_line() +  
+  geom_point() +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    y = "pH",
+    title = "pH über Zeit"
+  )
+
+## Plot Strahlung ####
+ggplot(kombi, aes(temp, kW2, color = daynight)) + 
+  geom_point() +
+  theme_classic()
