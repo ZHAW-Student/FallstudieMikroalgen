@@ -10,7 +10,7 @@ library("lubridate")
 
 ## Daten einlesen ####
 aktuell <- read_delim("2023-10-02_Kultivierungsdaten.csv", ",") #Dateinamen anpassen
-labordaten <- read_delim("Labordaten6.csv", ";") #Dateinamen anpassen
+labordaten <- read_delim("Labordaten_final.csv", ";") #Dateinamen anpassen
 
 # neuen Dataframe erstellen mit den Labordaten aus dem csv, die uns weiter interessieren
 labor <- data.frame(Datum= as.character(labordaten$Datum_Probenahme))
@@ -23,7 +23,9 @@ labor <- labor |>
          log10Konz = log10(Konzentration),
          Tage = labordaten$Tag,
          Glucose = labordaten$Glucose_mml_l)
-
+x <- labor$Trockenmasse
+ZunahmeTM <- diff(x, lag = 1)
+labor$Neu <- diff(x, lag = 1)
 # neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
 ps_neu <- data.frame(DateTime = as.POSIXct(as.character(aktuell$time.string), format = "%Y-%m-%d %H:%M:%OS"))
 
@@ -35,7 +37,8 @@ ps_neu <- ps_neu |>
          pH = aktuell$pH,
          daynight = as.factor(aktuell$daynight),
          kW1 = aktuell$PAR.1*2.19/10000, # Umrechnen PAR in kW nach XX
-         kW2 = aktuell$PAR.2*2.19/10000)
+         kW2 = aktuell$PAR.2*2.19/10000,
+         truebung = aktuell$TURBIDITY)
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
 # beide Datensätze über den DateTime kombinieren
@@ -105,3 +108,18 @@ ggplot(kombi, aes(x=DateTime, y=pH)) + geom_point() + geom_line() +
 ggplot(kombi, aes(temp, kW2, color = daynight)) + 
   geom_point() +
   theme_classic()
+
+## Wachstum ####
+ggplot() + 
+  geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "green") +
+  geom_line(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
+  scale_y_continuous(
+    name = "Trübung", 
+    sec.axis = sec_axis(~., name = "Trockenmasse")) +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    title = "Wachstum über Zeit"
+  )
+
+## 
