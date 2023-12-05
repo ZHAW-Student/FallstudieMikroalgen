@@ -24,9 +24,7 @@ labor <- labor |>
          log10Konz = log10(Konzentration),
          Tage = labordaten$Tag,
          Glucose = labordaten$Glucose_mml_l)
-x <- labor$Trockenmasse
-ZunahmeTM <- diff(x, lag = 1)
-labor$Neu <- diff(x, lag = 1)
+
 # neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
 ps_neu <- data.frame(DateTime = as.POSIXct(as.character(aktuell$time.string), format = "%Y-%m-%d %H:%M:%OS"))
 
@@ -39,6 +37,8 @@ ps_neu <- ps_neu |>
          daynight = as.factor(aktuell$daynight),
          kW1 = aktuell$PAR.1*2.19/10000, # Umrechnen PAR in kW nach XX
          kW2 = aktuell$PAR.2*2.19/10000,
+         W1 = ps_neu$kW1*1000,
+         W2 = ps_neu$kW2*1000,
          truebung = aktuell$TURBIDITY)
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
@@ -49,6 +49,11 @@ kombi <- full_join(labor, ps_neu, by = "DateTime")
 kombi <- kombi |> 
   group_by(daynight) |> 
   mutate(kWdiff = kW2 - kW1)
+
+# Werte vor Start und nach Ende des Experiments wegschneiden ####
+kombi <- kombi[which(kombi$DateTime >= "2023-10-02 12:00:00"),]
+kombi <- kombi[which(kombi$DateTime <= "2023-11-13 12:00:00" ),]
+
 
 # Plots ####
 theme_classic()
@@ -123,11 +128,11 @@ ggplot(kombi, aes(temp, kW2, color = daynight)) +
 
 ## Wachstum ####
 ggplot() + 
-  geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "green") +
-  geom_line(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
-  scale_y_continuous(
-    name = "Trübung", 
-    sec.axis = sec_axis(~., name = "Trockenmasse")) +
+  geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
+  geom_point(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
+  scale_y_continuous(trans = log10_trans(),
+    name = "Trübung [umgerechnet auf g/l]", 
+    sec.axis = sec_axis(~., name = "Trockenmasse [g/l]")) +
   theme_classic() +
   labs(
     x = "Datum",
@@ -137,10 +142,10 @@ ggplot() +
 ## Temp und PAR ####
 ggplot() +
   geom_line(data = kombi, aes(x = DateTime, y = temp), color = "red" ) + 
-  geom_line(data = kombi, aes(x = DateTime, y = (kW2)), color = "blue") +
+  geom_line(data = kombi, aes(x = DateTime, y = (W2)), color = "blue") +
   scale_y_continuous(
     name = "Temp",  
-    sec.axis = sec_axis(~., name = "kW")) +
+    sec.axis = sec_axis(~., name = "Watt")) +
   theme_classic() +
   labs(
     x = "Datum",
