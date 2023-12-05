@@ -7,9 +7,10 @@ library("ggplot2")
 library("ggpmisc")
 library("readr")
 library("lubridate")
+library("scales")
 
 ## Daten einlesen ####
-aktuell <- read_delim("2023-10-02_Kultivierungsdaten.csv", ",") #Dateinamen anpassen
+aktuell <- read_delim("all_data_avg10min.csv", ",") #Dateinamen anpassen
 labordaten <- read_delim("Labordaten_final.csv", ";") #Dateinamen anpassen
 
 # neuen Dataframe erstellen mit den Labordaten aus dem csv, die uns weiter interessieren
@@ -74,6 +75,17 @@ ggplot(labor, aes(x=DateTime, y=Konzentration)) + geom_point() + geom_line() +
       title = "Algenkonzentration über Zeit"
     )
 
+## Plot Konzentration über Zeit mit log Skala ####
+ggplot(labor, aes(x=DateTime, y=Konzentration)) + geom_point() + geom_line() +  
+  scale_y_continuous(trans = log10_trans()) +
+  geom_point() +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    y = "Anzahl Algen pro ml",
+    title = "Algenkonzentration über Zeit"
+    )
+
 ## Plot Trockenmasse ####
 ggplot(labor, aes(x=DateTime, y=Trockenmasse)) + geom_point() + geom_line() +  
   geom_point() +
@@ -122,4 +134,15 @@ ggplot() +
     title = "Wachstum über Zeit"
   )
 
-## 
+## Temp und PAR ####
+ggplot() +
+  geom_line(data = kombi, aes(x = DateTime, y = temp), color = "red" ) + 
+  geom_line(data = kombi, aes(x = DateTime, y = (kW2)), color = "blue") +
+  scale_y_continuous(
+    name = "Temp",  
+    sec.axis = sec_axis(~., name = "kW")) +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    title = "Temperatur und Strahlung"
+  )
