@@ -142,7 +142,7 @@ ggplot() +
 ## Temp und PAR ####
 ggplot() +
   geom_line(data = kombi, aes(x = DateTime, y = temp), color = "red" ) + 
-  geom_line(data = kombi, aes(x = DateTime, y = (W2)), color = "blue") +
+  geom_line(data = kombi, aes(x = DateTime, y = W2), color = "blue") +
   scale_y_continuous(
     name = "Temp",  
     sec.axis = sec_axis(~., name = "Watt")) +
