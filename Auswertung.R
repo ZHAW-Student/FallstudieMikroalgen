@@ -12,6 +12,7 @@ library("scales")
 ## Daten einlesen ####
 aktuell <- read_delim("all_data_avg10min.csv", ",") #Dateinamen anpassen
 labordaten <- read_delim("Labordaten_final.csv", ";") #Dateinamen anpassen
+mikrobio <- read_delim("Mikrobio_01.csv", ";") #Dateinamen anpassen
 
 # neuen Dataframe erstellen mit den Labordaten aus dem csv, die uns weiter interessieren
 labor <- data.frame(Datum= as.character(labordaten$Datum_Probenahme))
@@ -42,7 +43,16 @@ ps_neu <- ps_neu |>
          truebung = aktuell$TURBIDITY)
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
-# beide Datensätze über den DateTime kombinieren
+# neuen Dataframe erstellen mit den Mikrobiodaten aus dem csv, die uns weiter interessieren
+bakterien <- data.frame(Datum= as.character(mikrobio$Datum_Probenahme))
+bakterien <- bakterien |> 
+  mutate(Zeit = as.character(labordaten$Zeitpunkt_Probenahme),
+         DatumZeit = as.character(paste(Datum, Zeit)),
+         DateTime = as.POSIXct(as.character(DatumZeit), format = "%d.%m.%Y %H:%M:%OS", tz = "UTC"),
+         Mittelwert = as.numeric(mean(mikrobio$Anzahl_A_CFU_1L, mikrobio$Anzahl_B_CFU_50um)),
+         std = as.numeric(sd(mikrobio$Anzahl_A_CFU_1L, mikrobio$Anzahl_B_CFU_1L)))
+
+# Datensätze labor & pe_neu über den DateTime kombinieren
 kombi <- full_join(labor, ps_neu, by = "DateTime")
 
 # Kombitabelle anpassen
