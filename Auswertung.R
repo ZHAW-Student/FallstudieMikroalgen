@@ -44,14 +44,17 @@ ps_neu <- ps_neu |>
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
 # neuen Dataframe erstellen mit den Mikrobiodaten aus dem csv, die uns weiter interessieren
+## noch zu klären: Masseinheit überall gleich? Hier pro L
 bakterien <- data.frame(Datum= as.character(mikrobio$Datum_Probenahme))
 bakterien <- bakterien |> 
-  mutate(Zeit = as.character(labordaten$Zeitpunkt_Probenahme),
+  mutate(Zeit = as.character(mikrobio$Zeitpunkt_Probenahme),
          DatumZeit = as.character(paste(Datum, Zeit)),
          DateTime = as.POSIXct(as.character(DatumZeit), format = "%d.%m.%Y %H:%M:%OS", tz = "UTC"),
-         Mittelwert = as.numeric(mean(mikrobio$Anzahl_A_CFU_1L, mikrobio$Anzahl_B_CFU_50um)),
-         std = as.numeric(sd(mikrobio$Anzahl_A_CFU_1L, mikrobio$Anzahl_B_CFU_1L)))
+         Bakterien = as.numeric(mikrobio$Mittelwert_L),
+         log10Bakt = log10(Bakterien)
+)
 
+         
 # Datensätze labor & pe_neu über den DateTime kombinieren
 kombi <- full_join(labor, ps_neu, by = "DateTime")
 
@@ -63,6 +66,9 @@ kombi <- kombi |>
 # Werte vor Start und nach Ende des Experiments wegschneiden ####
 kombi <- kombi[which(kombi$DateTime >= "2023-10-02 12:00:00"),]
 kombi <- kombi[which(kombi$DateTime <= "2023-11-13 12:00:00" ),]
+
+# Datensätze bakterien & kombi über den DateTime kombinieren
+kombi2 <- full_join(bakterien, kombi, by = "DateTime", relationship = "many-to-many")
 
 
 # Plots ####
@@ -161,3 +167,42 @@ ggplot() +
     x = "Datum",
     title = "Temperatur und Strahlung"
   )
+
+## Plot Bakterien ####
+### zu klären: Masseinheit 
+ggplot(bakterien, aes(x=DateTime, y= Bakterien)) + geom_point() + geom_line() +  
+  geom_point() +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    y = "Bakterien pro L",
+    title = "Bakterien Konzentration über Zeit"
+  )
+
+## Plot Bakterien über Zeit mit log Skala ####
+### zu klären: nehmen wir hier die bereits berechneten logDaten oder lassen wir die hier umrechnen?
+ggplot(bakterien, aes(x=DateTime, y= Bakterien)) + geom_point() + geom_line() +  
+  geom_point() + 
+  scale_y_continuous(trans = log10_trans()) +
+  theme_classic() +
+  labs(
+    x = "Datum",
+    y = "Bakterien pro L",
+    title = "Bakterien Konzentration über Zeit log10"
+  )
+
+## Plot Bakterien und Wachstum über Zeit ##
+### zu klären: Plot funktioniert noch nicht
+ggplot() +
+  geom_line(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) + 
+  geom_line(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
+  scale_y_continuous(
+    name = "Wachstum")+ 
+    theme_classic() +
+    labs(
+    x = "Datum",
+    title = "Wachstum & Bakterien"
+  )
+
+
+
