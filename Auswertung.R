@@ -187,8 +187,8 @@ ggplot(data = kombi4, aes(x = DateTime)) +
 ## Plot Bakterien und Wachstum über Zeit ##
 ### zu klären: Plot funktioniert noch nicht
 ggplot() +
-  geom_point(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) + 
-  geom_point(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
+  geom_path(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) + 
+  geom_path(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
   theme_classic()
 
 ## Berechnung Mittelwert und SEM für Zellzahl und Trockenmasse ####
