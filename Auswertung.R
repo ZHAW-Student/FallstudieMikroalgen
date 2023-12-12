@@ -115,7 +115,7 @@ kombi <- kombi |>
 ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase)) + 
   geom_line(show.legend = FALSE) +  
   stat_poly_line() +
-  #stat_poly_eq(use_label(c("eq", "R2"))) +
+  stat_poly_eq(use_label(c("eq", "R2"))) +
   geom_point() + 
   theme(legend.position = "none") +
   scale_y_continuous(trans = log10_trans()) +
@@ -125,7 +125,7 @@ ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase
     y = "Algae cell numbers per ml",
     x = ""
   )
-ggsave("Wachstumsphasen.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+ggsave("Wachstumsphasen_mit_Formel.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ##  Werte grösser als 4.5 als NA ####
 kombi$pH2 <- kombi$pH
