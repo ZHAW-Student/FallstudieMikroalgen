@@ -125,6 +125,7 @@ ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase
     y = "Algae cell numbers per ml",
     x = ""
   )
+ggsave("Wachstumsphasen.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ##  Werte grösser als 4.5 als NA ####
 kombi$pH2 <- kombi$pH
@@ -139,7 +140,7 @@ ggplot(kombi, aes(x=DateTime, y=pH2)) +
     x = "",
     y = "pH",
   )
-
+ggsave("ph.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Berechnung pH ####
 sd_pH <- sd(kombi$pH, na.rm = TRUE)
@@ -167,6 +168,7 @@ ggplot() +
   labs(
     x = ""
   )
+ggsave("Truebung_Trockenmasse.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Temp und PAR ####
 coeff = 10
@@ -240,6 +242,8 @@ ggplot(data = sum_ps, aes(x = DateTime)) +
   labs(
     x = "")
 
+ggsave("PAR_neu.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
 ggplot() + 
   geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
   theme_classic() +
@@ -248,6 +252,8 @@ ggplot() +
   labs(
     x = "",
     y = "Turbidity recalculated to g per ml")
+
+ggsave("PAR_neu_Turbidity.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## PAR und Wachstum alte Daten #### 
 coeff = 0.1
@@ -261,6 +267,7 @@ ggplot(data = sum_ps_alt, aes(x = DateTime)) +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "")
+ggsave("PAR_alt.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ggplot() + 
   geom_line(data = ps_alt, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
@@ -270,6 +277,7 @@ ggplot() +
   labs(
     x = "",
     y = "Turbidity recalculated to g per ml")
+ggsave("PAR_alt_Turbidity.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Plot Bakterien und Wachstum über Zeit ##
 ### zu klären: Plot funktioniert noch nicht
@@ -282,6 +290,7 @@ ggplot() +
   labs(
     x = "",
     y = "CFU per ml")
+ggsave("Bakterien.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Berechnungen Bakterien ####
 mw_bakt <- mean(kombi2$Bakterien_ml, na.rm = TRUE)
