@@ -12,12 +12,13 @@ library("plotrix")
 library("naniar")
 library("lubridate")
 library("dplyr")
-
+library("timetk")
 
 ## Daten einlesen ####
 aktuell <- read_delim("all_data_avg10min.csv", ",") #Dateinamen anpassen
 labordaten <- read_delim("Labordaten_final.csv", ";") #Dateinamen anpassen
 mikrobio <- read_delim("Mikrobio_01.csv", ";") #Dateinamen anpassen
+august <- read_delim("2023-08-15_Kultivierungsdaten.csv", ",")
 
 # neuen Dataframe erstellen mit den Labordaten aus dem csv, die uns weiter interessieren
 labor <- data.frame(Datum= as.character(labordaten$Datum_Probenahme))
@@ -57,6 +58,23 @@ ps_neu <- ps_neu |>
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 ps_neu$Phase_pH[1:3195] <- 1
 ps_neu$Phase_pH[3196:6356] <- 2
+
+# neuer Dataframe mit Daten von August ####
+ps_alt <- data.frame(DateTime = as.POSIXct(as.character(august$time.string), format = "%Y-%m-%d %H:%M:%OS"))
+
+ps_alt <- ps_alt |> 
+  mutate(par1 = august$PAR.1, # PAR Angaben in umol/m2/s
+         par2 = august$PAR.2,
+         pardiff = par2 - par1,
+         temp = august$TEMPERATURE,
+         pH = august$pH,
+         daynight = as.factor(august$daynight),
+         kW1 = august$PAR.1*2.19/10000, # Umrechnen PAR in kW nach XX
+         kW2 = august$PAR.2*2.19/10000,
+         W1 = august$PAR.1*2.19,
+         W2 = august$PAR.2*2.19,
+         truebung = august$TURBIDITY)
+ps_alt$DateTime <- as.POSIXct(ps_alt$DateTime, format = "%Y-%m-%d %H:%M:%OS")
 
 # neuen Dataframe erstellen mit den Mikrobiodaten aus dem csv, die uns weiter interessieren
 ## noch zu klären: Masseinheit überall gleich? Hier pro L
@@ -161,38 +179,95 @@ ggplot(data = kombi, aes(x = DateTime)) +
     x = "Datum",
     title = "Temperatur und Strahlung")
 
-##Berechnung PAR - Tageszeit ####
-dplyr::summarise_by_time(
-  .kombi,
-  .kombi$DateTime,
-  .by = "day",
-  ...,
-  .type = c("floor", "ceiling", "round"),
-  .week_start = NULL
+## Berechnung PAR - Tageszeit neue Daten ####
+sum_ps <- summarise_by_time(
+          ps_neu,
+          DateTime,
+          by = "day",
+          week_start = NULL,
+          kW = sum(kW2, na.rm = TRUE)
+          )
+sum_ps$kWh <- sum_ps$kW
+sum_ps$kWh <- sum_ps$kW/24
+sum_ps$Wh <- sum_ps$kWh*1000
+
+sum_temp <- summarise_by_time(
+          ps_neu,
+          DateTime,
+          by = "day",
+          week_start = NULL,
+          mean_temp = mean(temp, na.rm = TRUE)
+          )
+
+sum_temp_cut <- sum_temp[1:43,]
+
+## Berechnung PAR - Tageszeit alte Daten ####
+sum_ps_alt <- summarise_by_time(
+  ps_alt,
+  DateTime,
+  by = "day",
+  week_start = NULL,
+  kW = sum(kW2, na.rm = TRUE)
 )
+sum_ps_alt$kWh <- sum_ps_alt$kW
+sum_ps_alt$kWh <- sum_ps_alt$kW/24
+sum_ps_alt$Wh <- sum_ps_alt$kWh*1000
 
+sum_ps_alt <- sum_ps_alt[1:29,]
 
-## PAR und Wachstum #### 
-ggplot(data = kombi, aes(x = DateTime)) +
-  geom_line(aes(y = kW2), color = "red" ) + 
-  geom_line(aes(y = truebung), color = "blue") +
-  facet_wrap(vars(kW2, truebung))
+sum_temp_alt <- summarise_by_time(
+  ps_alt,
+  DateTime,
+  by = "day",
+  week_start = NULL,
+  mean_temp = mean(temp, na.rm = TRUE)
+)
+sum_temp_alt <- sum_temp_alt[1:29,]
+ps_alt$truebung[ps_alt$truebung >= 15] <- NA
 
-kombi4 <- kombi[which(kombi$daynight == 1 ),]  
-  
-coeff = 10
-ggplot(data = kombi4, aes(x = DateTime)) +
-  geom_line(aes(y = kombi4$kW2), color = "red" ) + 
-  geom_line(aes(y = truebung/coeff), color = "blue") +
+## PAR und Wachstum neue Daten #### 
+coeff = 0.1
+ggplot(data = sum_ps, aes(x = DateTime)) +
+  geom_line(aes(y = Wh), color = "blue" ) + 
+  geom_line(data = sum_temp_cut, aes(y = mean_temp/coeff), color = "red") +
   scale_y_continuous(
-    name = "kW",  
-    sec.axis = sec_axis(~.*coeff, name = "Turbidity [recalculated to g/l]")) +
+    name = "Wh",  
+    sec.axis = sec_axis(~.*coeff, name = "Temperature")) +
   theme_classic() +
-  geom_smooth(aes(y = kombi4$kW2, color = "red")) +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "")
 
+ggplot() + 
+  geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
+  theme_classic() +
+  scale_y_continuous(trans = log10_trans()) +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  labs(
+    x = "",
+    y = "Turbidity recalculated to g per ml")
 
+## PAR und Wachstum alte Daten #### 
+coeff = 0.1
+ggplot(data = sum_ps_alt, aes(x = DateTime)) +
+  geom_line(aes(y = Wh), color = "blue" ) + 
+  geom_line(data = sum_temp_alt, aes(y = mean_temp/coeff), color = "red") +
+  scale_y_continuous(
+    name = "Wh",  
+    sec.axis = sec_axis(~.*coeff, name = "Temperature")) +
+  theme_classic() +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  labs(
+    x = "")
+
+ggplot() + 
+  geom_line(data = ps_alt, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
+  theme_classic() +
+  scale_y_continuous(trans = log10_trans()) +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  labs(
+    x = "",
+    y = "Turbidity recalculated to g per ml")
 
 ## Plot Bakterien und Wachstum über Zeit ##
 ### zu klären: Plot funktioniert noch nicht
@@ -217,4 +292,3 @@ mw_tm <- mean(kombi$Trockenmasse, na.rm = TRUE)
 sem_zz <- std.error(kombi$Konzentration, na.rm = TRUE)
 sem_tm <- std.error(kombi$Trockenmasse, na.rm = TRUE)
 
-## Berechnungen pH ####
