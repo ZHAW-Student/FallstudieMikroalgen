@@ -34,6 +34,8 @@ labor$Phase[13:18] <- 2
 labor$Phase[19:22] <- 3
 labor$Add <- labor$Glucose
 labor$Add[labor$Add > 0] <- 6
+labor$Add2 <- labor$Glucose
+labor$Add2[labor$Add2 > 0] <- 100000
 
 # neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
 ps_neu <- data.frame(DateTime = as.POSIXct(as.character(aktuell$time.string), format = "%Y-%m-%d %H:%M:%OS"))
@@ -63,7 +65,6 @@ bakterien <- bakterien |>
          Bakterien_ml = as.numeric(Bakterien_l/1000),
          log10Bakt = log10(Bakterien_l)
 )
-bakterien2 <- bakterien[2:10,]
          
 # Datensätze labor & pe_neu über den DateTime kombinieren
 kombi <- full_join(labor, ps_neu, by = "DateTime")
@@ -78,7 +79,8 @@ kombi <- kombi[which(kombi$DateTime >= "2023-10-02 12:00:00"),]
 kombi <- kombi[which(kombi$DateTime <= "2023-11-13 12:00:00" ),]
 
 # Datensätze bakterien & kombi über den DateTime kombinieren
-kombi2 <- full_join(bakterien2, kombi, by = "DateTime", relationship = "many-to-many")
+kombi2 <- full_join(bakterien, kombi, by = "DateTime", relationship = "many-to-many")
+
 
 
 # Plots ####
@@ -175,16 +177,18 @@ ggplot(data = kombi4, aes(x = DateTime)) +
 ## Plot Bakterien und Wachstum über Zeit ##
 ### zu klären: Plot funktioniert noch nicht
 ggplot() +
-  geom_path(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) + 
-  geom_point(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) +
-  geom_path(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
-  geom_point(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
+  geom_path(data = kombi2, aes(x = DateTime, y = Bakterien_ml), color = "blue" ) + 
+  geom_point(data = kombi, aes(x = DateTime, y = Add2), col = "red", shape = 6, size = 3) +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  scale_y_continuous(trans = log10_trans(), limits = c(1e+05,1e+07)) +
   theme_classic() +
   labs(
     x = "",
-    title = "Temperatur und Strahlung")
+    y = "CFU per ml")
 
+## Berechnungen Bakterien ####
+mw_bakt <- mean(kombi2$Bakterien_ml, na.rm = TRUE)
+sem_bakt <- std.error(kombi2$Bakterien_ml, na.rm = TRUE)
 
 
 ## Berechnung Mittelwert und SEM für Zellzahl und Trockenmasse ####
