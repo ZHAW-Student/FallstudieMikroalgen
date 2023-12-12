@@ -10,6 +10,11 @@ library("lubridate")
 library("scales")
 library("plotrix")
 library("naniar")
+library("lubridate")
+install.packages("dplyr")
+library("dplyr")
+
+
 
 
 ## Daten einlesen ####
@@ -150,6 +155,16 @@ ggplot(data = kombi, aes(x = DateTime)) +
   labs(
     x = "Datum",
     title = "Temperatur und Strahlung")
+
+##Berechnung PAR - Tageszeit ####
+dplyr::summarise_by_time(
+  .kombi,
+  .kombi$DateTime,
+  .by = "day",
+  ...,
+  .type = c("floor", "ceiling", "round"),
+  .week_start = NULL
+)
 
 
 ## PAR und Wachstum #### 
