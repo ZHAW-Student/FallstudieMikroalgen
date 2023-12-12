@@ -140,6 +140,7 @@ ggplot(kombi, aes(x=DateTime, y=pH2)) +
     y = "pH",
   )
 
+
 ## Berechnung pH ####
 sd_pH <- sd(kombi$pH, na.rm = TRUE)
 mw_pH <- mean(kombi$pH, na.rm = TRUE)
