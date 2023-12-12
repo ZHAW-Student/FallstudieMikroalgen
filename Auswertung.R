@@ -56,6 +56,8 @@ ps_neu <- ps_neu |>
          W2 = aktuell$PAR.2*2.19,
          truebung = aktuell$TURBIDITY)
 ps_neu$DateTime <- as.POSIXct(ps_neu$DateTime, format = "%Y-%m-%d %H:%M:%OS")
+ps_neu$Phase_pH[1:3195] <- 1
+ps_neu$Phase_pH[3196:6356] <- 2
 
 # neuer Dataframe mit Daten von August ####
 ps_alt <- data.frame(DateTime = as.POSIXct(as.character(august$time.string), format = "%Y-%m-%d %H:%M:%OS"))
@@ -102,7 +104,6 @@ kombi <- kombi[which(kombi$DateTime <= "2023-11-13 12:00:00" ),]
 kombi2 <- full_join(bakterien, kombi, by = "DateTime", relationship = "many-to-many")
 
 
-
 # Plots ####
 Sys.setlocale("LC_TIME", "English")
 
@@ -144,6 +145,13 @@ mw_pH <- mean(kombi$pH, na.rm = TRUE)
 sd_pH2 <- sd(kombi$pH2, na.rm = TRUE)
 mw_pH2 <- mean(kombi$pH2, na.rm = TRUE)
 
+phase1 <- ps_neu[which(ps_neu$Phase_pH == 1),]
+phase2 <- ps_neu[which(ps_neu$Phase_pH == 2),]
+
+sd_pHp1 <- sd(phase1$pH, na.rm = TRUE)
+mw_pHp1 <- mean(phase1$pH, na.rm = TRUE)
+sd_pHp2 <- sd(phase2$pH, na.rm = TRUE)
+mw_pHp2 <- mean(phase2$pH, na.rm = TRUE)
 
 ## Wachstum Trübung und Trockenmasse ####
 ggplot() + 
