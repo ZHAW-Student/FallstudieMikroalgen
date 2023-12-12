@@ -12,6 +12,7 @@ library("plotrix")
 library("naniar")
 library("lubridate")
 library("dplyr")
+install.packages("timetk")
 library("timetk")
 
 ## Daten einlesen ####
