@@ -33,7 +33,7 @@ labor$Phase[1:12] <- 1
 labor$Phase[13:18] <- 2
 labor$Phase[19:22] <- 3
 labor$Add <- labor$Glucose
-labor$Add[labor$Add > 0] <- 0.03
+labor$Add[labor$Add > 0] <- 6
 
 # neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
 ps_neu <- data.frame(DateTime = as.POSIXct(as.character(aktuell$time.string), format = "%Y-%m-%d %H:%M:%OS"))
@@ -85,7 +85,7 @@ kombi2 <- full_join(bakterien2, kombi, by = "DateTime", relationship = "many-to-
 Sys.setlocale("LC_TIME", "English")
 
 
-## Plot Konzentration über Zeit mit log Skala ####
+## Plot Konzentration über Zeit mit log Skala #### Legende noch entfernen
 kombi <- kombi |> 
   group_by(Phase)
 ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase)) + 
@@ -95,6 +95,7 @@ ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase
   geom_point() + 
   theme(legend.position = "none") +
   scale_y_continuous(trans = log10_trans()) +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   theme_classic() +
   labs(
     y = "Algae cell numbers per ml",
@@ -109,6 +110,7 @@ kombi$pH2[kombi$pH2 >= 4.3] <- NA
 ggplot(kombi, aes(x=DateTime, y=pH2)) +
   geom_line(lwd = 0.5) + 
   theme_classic() +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "",
     y = "pH",
@@ -127,26 +129,12 @@ ggplot() +
   geom_point(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
   geom_point(data = kombi, aes(x = DateTime, y = Add), col = "red", shape = 6, size = 3) +
   scale_y_continuous(trans = log10_trans(),
-    name = "Turbidity [recalculated to g/l]", 
-    sec.axis = sec_axis(~., name = "dry matter [g/l]")) +
+                     name = "Turbidity [recalculated to g/l] and dry matter [g/l]") +
   theme_classic() +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = ""
   )
-### 
-ggplot(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) + 
-  geom_line() +
-  geom_point(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
-  geom_point(data = kombi, aes(x = DateTime, y = Add), col = "red", shape = 6, size = 3)
-  theme_classic() +
-  labs(
-    x = "",
-    y = "g/l"
-  )
-
-scale_fill_discrete(name="Experimental\nCondition",
-                    breaks=c("ctrl", "trt1", "trt2"),
-                    labels=c("Control", "Treatment 1", "Treatment 2"))
 
 ## Temp und PAR ####
 coeff = 10
@@ -188,8 +176,16 @@ ggplot(data = kombi4, aes(x = DateTime)) +
 ### zu klären: Plot funktioniert noch nicht
 ggplot() +
   geom_path(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) + 
+  geom_point(data = kombi2, aes(x = DateTime, y = log10Bakt), color = "red" ) +
   geom_path(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
-  theme_classic()
+  geom_point(data = kombi2, aes(x = DateTime, y = log10Konz), color = "blue") +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  theme_classic() +
+  labs(
+    x = "",
+    title = "Temperatur und Strahlung")
+
+
 
 ## Berechnung Mittelwert und SEM für Zellzahl und Trockenmasse ####
 mw_zz <- mean(kombi$Konzentration, na.rm = TRUE)
