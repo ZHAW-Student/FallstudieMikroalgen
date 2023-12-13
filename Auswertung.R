@@ -138,6 +138,7 @@ ggplot(kombi, aes(x=DateTime, y=pH2)) +
     x = "",
     y = "pH",
   )
+ggsave("ph.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Berechnung pH ####
 sd_pH <- sd(kombi$pH, na.rm = TRUE)
@@ -147,6 +148,8 @@ mw_pH2 <- mean(kombi$pH2, na.rm = TRUE)
 
 phase1 <- ps_neu[which(ps_neu$Phase_pH == 1),]
 phase2 <- ps_neu[which(ps_neu$Phase_pH == 2),]
+phase1$pH[phase1$pH >= 4.3] <- NA
+phase2$pH[phase2$pH >= 4.3] <- NA
 
 sd_pHp1 <- sd(phase1$pH, na.rm = TRUE)
 mw_pHp1 <- mean(phase1$pH, na.rm = TRUE)
