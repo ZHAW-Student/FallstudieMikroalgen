@@ -127,9 +127,11 @@ ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase
   )
 ggsave("Wachstumsphasen_mit_Formel.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
-##  Werte grösser als 4.5 als NA ####
+##  Werte grösser als 4.3 als NA ####
 kombi$pH2 <- kombi$pH
 kombi$pH2[kombi$pH2 >= 4.3] <- NA
+phase1$pH[phase1$pH >= 4.3] <- NA
+phase2$pH[phase2$pH >= 4.3] <- NA
 
 ## Plot pH ####
 ggplot(kombi, aes(x=DateTime, y=pH2)) +
