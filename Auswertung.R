@@ -17,7 +17,7 @@ library("timetk")
 
 ## Daten einlesen ####
 aktuell <- read_delim("all_data_avg10min.csv", ",") #Dateinamen anpassen
-labordaten <- read_delim("Labordaten_final.csv", ";") #Dateinamen anpassen
+labordaten <- read_delim("labordaten_neu (1).csv", ";") #Dateinamen anpassen
 mikrobio <- read_delim("Mikrobio_01.csv", ";") #Dateinamen anpassen
 august <- read_delim("2023-08-15_Kultivierungsdaten.csv", ",")
 
@@ -31,14 +31,15 @@ labor <- labor |>
          Trockenmasse = as.numeric(labordaten$Trockenmasse_gL),
          log10Konz = log10(Konzentration),
          Tage = labordaten$Tag,
-         Glucose = labordaten$Glucose_mml_l,
-         Phase = 0)
+         Glucose = labordaten$Glukosegehalt_mmol_L,
+         Phase = 0,
+         Zugabe = labordaten$Glucose_add)
 labor$Phase[1:12] <- 1
 labor$Phase[13:18] <- 2
-labor$Phase[19:22] <- 3
-labor$Add <- labor$Glucose
+labor$Phase[19:23] <- 3
+labor$Add <- labor$Zugabe
 labor$Add[labor$Add > 0] <- 6
-labor$Add2 <- labor$Glucose
+labor$Add2 <- labor$Zugabe
 labor$Add2[labor$Add2 > 0] <- 100000
 
 # neuen Dataframe erstellen mit den Reaktordatendaten aus dem csv, die uns weiter interessieren
@@ -127,6 +128,25 @@ ggplot(data = labor, aes(x=DateTime, y=Konzentration, col = Phase, group = Phase
   )
 ggsave("Wachstumsphasen_mit_Formel.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
+## TAGE Plot Konzentration über Zeit mit log Skala #### Legende noch entfernen
+kombi <- kombi |> 
+  group_by(Phase)
+ggplot(data = labor, aes(x=Tage, y=Konzentration, col = Phase, group = Phase)) + 
+  geom_line(show.legend = FALSE) +  
+  stat_poly_line() +
+  stat_poly_eq(use_label(c("eq", "R2"))) +
+  geom_point() + 
+  theme(legend.position = "none") +
+  scale_y_continuous(trans = log10_trans()) +
+  scale_x_continuous(breaks = c(0,5,10,15,20,25,30,35,40,45)) +
+  theme_classic() +
+  labs(
+    y = "Algae cell numbers per ml",
+    x = "Days"
+  )
+ggsave("TAGE_Wachstumsphasen_mit_Formel.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
+
 ##  Werte grösser als 4.3 als NA ####
 kombi$pH2 <- kombi$pH
 kombi$pH2[kombi$pH2 >= 4.3] <- NA
@@ -143,6 +163,18 @@ ggplot(kombi, aes(x=DateTime, y=pH2)) +
     y = "pH",
   )
 ggsave("ph.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
+## TAGE Plot pH ####
+ggplot(kombi, aes(x=Tage, y=pH2)) +
+  geom_path(lwd = 0.5) + 
+  theme_classic() +
+  scale_x_continuous(breaks = c(0,5,10,15,20,25,30,35,40,45)) +
+  labs(
+    x = "Days",
+    y = "pH",
+  )
+gggeom_path()ggsave("ph.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
 
 ## Berechnung pH ####
 sd_pH <- sd(kombi$pH, na.rm = TRUE)
@@ -163,7 +195,7 @@ mw_pHp2 <- mean(phase2$pH, na.rm = TRUE)
 ## Wachstum Trübung und Trockenmasse ####
 ggplot() + 
   geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
-  geom_point(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "blue") +
+  geom_point(data = kombi, aes(x=DateTime, y=Trockenmasse), color = "black") +
   geom_point(data = kombi, aes(x = DateTime, y = Add), col = "red", shape = 6, size = 3) +
   scale_y_continuous(trans = log10_trans(),
                      name = "Turbidity [recalculated to g/l] and dry matter [g/l]") +
@@ -172,7 +204,21 @@ ggplot() +
   labs(
     x = ""
   )
-ggsave("Truebung_Trockenmasse.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+ggsave("Truebung_Trockenmasse_glucose_black.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
+## TAGE Wachstum Trübung und Trockenmasse ####
+ggplot() + 
+  geom_line(data = kombi, aes(x=Tage, y=truebung), color = "black", lwd = 0.5) +
+  geom_point(data = kombi, aes(x=Tage, y=Trockenmasse), color = "black") +
+  geom_point(data = kombi, aes(x = Tage, y = Add), col = "red", shape = 6, size = 3) +
+  scale_y_continuous(trans = log10_trans(),
+                     name = "Turbidity [recalculated to g/l] and dry matter [g/l]") +
+  theme_classic() +
+  scale_x_continuous(breaks = c(0,5,10,15,20,25,30,35,40,45)) +
+  labs(
+    x = ""
+  )
+ggsave("Truebung_Trockenmasse_glucose_black.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Temp und PAR ####
 coeff = 10
@@ -248,6 +294,23 @@ ggplot(data = sum_ps, aes(x = DateTime)) +
 
 ggsave("PAR_neu.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
+## TEST
+coeff = 0.1
+ggplot(data = sum_ps, aes(x = DateTime)) +
+  geom_line(aes(y = Wh), color = "blue" ) + 
+  geom_line(data = sum_temp_cut, aes(y = mean_temp/coeff), color = "red") +
+  scale_y_continuous(
+    name = "Wh",
+    sec.axis = sec_axis(~.*coeff, name = "Temperature")) +
+  ylim(0,450) +
+  theme_classic() +
+  scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
+  labs(
+    x = "")
+ggsave("PAR_neu_Limits.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+
+##
+
 ggplot() + 
   geom_line(data = kombi, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
   theme_classic() +
@@ -255,7 +318,7 @@ ggplot() +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "",
-    y = "Turbidity recalculated to g per ml")
+    y = "Turbidity [recalculated to g/l]")
 
 ggsave("PAR_neu_Turbidity.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
@@ -268,10 +331,11 @@ ggplot(data = sum_ps_alt, aes(x = DateTime)) +
     name = "Wh",  
     sec.axis = sec_axis(~.*coeff, name = "Temperature")) +
   theme_classic() +
+  ylim(0,450) +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "")
-ggsave("PAR_alt.jpeg", last_plot(), width = 16, height = 10, units = "cm")
+ggsave("PAR_alt_Limits.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ggplot() + 
   geom_line(data = ps_alt, aes(x=DateTime, y=truebung), color = "black", lwd = 0.5) +
@@ -280,13 +344,13 @@ ggplot() +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   labs(
     x = "",
-    y = "Turbidity recalculated to g per ml")
+    y = "Turbidity [recalculated to g/l]")
 ggsave("PAR_alt_Turbidity.jpeg", last_plot(), width = 16, height = 10, units = "cm")
 
 ## Plot Bakterien und Wachstum über Zeit ##
 ### zu klären: Plot funktioniert noch nicht
 ggplot() +
-  geom_path(data = kombi2, aes(x = DateTime, y = Bakterien_ml), color = "blue" ) + 
+  geom_path(data = kombi2, aes(x = DateTime, y = Bakterien_ml), color = "black" ) + 
   geom_point(data = kombi, aes(x = DateTime, y = Add2), col = "red", shape = 6, size = 3) +
   scale_x_datetime(date_labels = "%b %d", date_breaks = "1 week") +
   scale_y_continuous(trans = log10_trans(), limits = c(1e+05,1e+07)) +
